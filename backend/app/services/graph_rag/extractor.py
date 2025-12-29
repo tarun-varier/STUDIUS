@@ -1,9 +1,10 @@
 from llama_index.llms.mistralai import MistralAI
 from llama_index.embeddings.mistralai import MistralAIEmbedding
 from llama_index.core import Settings
+from app.core.config import settings
 
-llm = MistralAI()
-embed_model = MistralAIEmbedding()
+llm = MistralAI(api_key=settings.MISTRAL_API_KEY)
+embed_model = MistralAIEmbedding(api_key=settings.MISTRAL_API_KEY)
 
 Settings.llm = llm
 Settings.embed_model = embed_model

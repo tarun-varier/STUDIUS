@@ -6,16 +6,16 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     
     # Add other env vars here (DB, Keys, etc.)
-    SUPABASE_URL: str | None = None
-    SUPABASE_KEY: str | None = None
-    MISTRAL_API_KEY: str | None = None
+    SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
+    MISTRAL_API_KEY: str | None = os.getenv("MISTRAL_API_KEY")
 
     # Database
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "password"
     POSTGRES_DB: str = "studius_db"
-    SUPABASE_DB_URL: str | None = None
+    SUPABASE_DB_URL: str | None = os.getenv("SUPABASE_DB_URL")
     
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
