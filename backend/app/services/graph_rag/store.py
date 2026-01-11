@@ -1,3 +1,6 @@
+import json
+import os
+from typing import Any
 from llama_index.llms.mistralai import MistralAI
 import re
 from llama_index.core.graph_stores import SimplePropertyGraphStore
@@ -8,8 +11,28 @@ from llama_index.core.llms import ChatMessage
 
 
 class GraphRAGStore(SimplePropertyGraphStore):
-    community_summary = {}
     max_cluster_size = 5
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.community_summary = {}
+
+    def persist(self, persist_path: str, fs=None) -> None:
+        super().persist(persist_path, fs)
+        with open(persist_path, "w") as f:
+            json.dump(self.community_summary, f)
+
+    @classmethod
+    def from_persist_dir(cls, persist_dir: str, fs=None) -> "GraphRAGStore":
+        obj = super().from_persist_dir(persist_dir, fs)
+        # obj is technically a SimplePropertyGraphStore unless super() uses cls()
+        # But we need it to be GraphRAGStore.
+        # SimplePropertyGraphStore.from_persist_dir creates valid instance of cls usually.
+        
+        if os.path.exists(persist_dir):
+            with open(persist_dir, "r") as f:
+                obj.community_summary = json.load(f)
+        return obj
 
     def generate_community_summary(self, text):
         """Generate summary for a given text using an LLM."""
@@ -34,6 +57,9 @@ class GraphRAGStore(SimplePropertyGraphStore):
     def build_communities(self):
         """Builds communities from the graph and summarizes them."""
         nx_graph = self._create_nx_graph()
+        if nx_graph.number_of_nodes() == 0:
+            return
+
         community_hierarchical_clusters = hierarchical_leiden(
             nx_graph, max_cluster_size=self.max_cluster_size
         )
@@ -52,7 +78,7 @@ class GraphRAGStore(SimplePropertyGraphStore):
                 relation.source_id,
                 relation.target_id,
                 relationship=relation.label,
-                description=relation.properties["relationship_description"],
+                description=relation.properties.get("relationship_description", "No description"),
             )
         return nx_graph
 

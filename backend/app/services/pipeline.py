@@ -30,7 +30,11 @@ class RAGService:
     def _load_or_create_index(self):
         try:
             if (self.storage_path / "docstore.json").exists():
-                storage_context = StorageContext.from_defaults(persist_dir=str(self.storage_path))
+                graph_store = GraphRAGStore()
+                storage_context = StorageContext.from_defaults(
+                    persist_dir=str(self.storage_path),
+                    property_graph_store=graph_store
+                )
                 return load_index_from_storage(storage_context)
             else:
                 # Initialize with empty graph store if no index exists
@@ -60,9 +64,11 @@ class RAGService:
         # Insert nodes into the existing index
         self.index.insert_nodes(nodes)
         
+        # Build communities
+        self.index.property_graph_store.build_communities()
+        
         # Persist changes to disk
         self.index.storage_context.persist(persist_dir=str(self.storage_path))
-        print(f"Ingested {file_path} and persisted to {self.storage_path}")
 
     def query(self, query_str: str) -> str:
         """Query the graph using GraphRAGQueryEngine."""
