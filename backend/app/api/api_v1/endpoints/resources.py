@@ -1,5 +1,6 @@
+import asyncio
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Form
 from sqlmodel.ext.asyncio.session import AsyncSession
 import shutil
 import os
@@ -27,8 +28,8 @@ async def read_question_banks(
 
 @router.post("/question-banks/", response_model=QuestionBank)
 async def create_question_bank(
-    title: str,
-    description: str | None = None,
+    title: str = Form(...),
+    description: str | None = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
 ) -> Any:
@@ -62,8 +63,8 @@ async def read_study_materials(
 @router.post("/study-materials/", response_model=StudyMaterial)
 async def create_study_material(
     background_tasks: BackgroundTasks,
-    title: str,
-    description: str | None = None,
+    title: str = Form(...),
+    description: str | None = Form(None),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_session),
 ) -> Any:
@@ -94,7 +95,8 @@ async def ingest_and_update(material_id: UUID, file_path: str):
     
     rag = RAGService()
     try:
-        rag.ingest_file(file_path)
+        # Run blocking/sync ingestion in a thread
+        await asyncio.to_thread(rag.ingest_file, file_path)
         
         # Update DB status
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

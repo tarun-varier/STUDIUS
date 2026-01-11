@@ -12,7 +12,11 @@ Settings.embed_model = embed_model
 import asyncio
 import nest_asyncio
 
-nest_asyncio.apply()
+try:
+    nest_asyncio.apply()
+except ValueError:
+    # nest_asyncio cannot patch uvloop, which is used by uvicorn by default
+    pass
 
 from typing import Any, List, Callable, Optional, Union, Dict
 
