@@ -19,6 +19,9 @@ class GraphRAGQueryEngine(CustomQueryEngine):
             for _, community_summary in community_summaries.items()
         ]
 
+        if not community_answers:
+             return "I could not find any relevant information in the knowledge graph to answer your query."
+
         final_answer = self.aggregate_answers(community_answers)
         return final_answer
 

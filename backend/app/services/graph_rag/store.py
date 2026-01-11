@@ -7,32 +7,51 @@ from llama_index.core.graph_stores import SimplePropertyGraphStore
 import networkx as nx
 from graspologic.partition import hierarchical_leiden
 
+from pathlib import Path
 from llama_index.core.llms import ChatMessage
 
 
 class GraphRAGStore(SimplePropertyGraphStore):
     max_cluster_size = 5
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.community_summary = {}
 
     def persist(self, persist_path: str, fs=None) -> None:
         super().persist(persist_path, fs)
-        with open(persist_path, "w") as f:
+        # Save summary to a separate file
+        path_obj = Path(persist_path)
+        # If it's a directory (unlikely for persist_path in recent versions, but check just in case):
+        if path_obj.is_dir():
+             summary_path = path_obj / "community_summary.json"
+        else:
+             summary_path = path_obj.parent / "community_summary.json"
+             
+        with open(summary_path, "w") as f:
             json.dump(self.community_summary, f)
 
     @classmethod
     def from_persist_dir(cls, persist_dir: str, fs=None) -> "GraphRAGStore":
         obj = super().from_persist_dir(persist_dir, fs)
-        # obj is technically a SimplePropertyGraphStore unless super() uses cls()
-        # But we need it to be GraphRAGStore.
-        # SimplePropertyGraphStore.from_persist_dir creates valid instance of cls usually.
         
-        if os.path.exists(persist_dir):
-            with open(persist_dir, "r") as f:
+        summary_path = Path(persist_dir) / "community_summary.json"
+        if summary_path.exists():
+            with open(summary_path, "r") as f:
                 obj.community_summary = json.load(f)
         return obj
+
+    @classmethod
+    def from_persist_path(cls, persist_path: str, fs=None) -> "GraphRAGStore":
+         # Attempt to load using super's method if available
+         obj = super().from_persist_path(persist_path, fs) if hasattr(super(), "from_persist_path") else cls()
+         
+         path_obj = Path(persist_path)
+         summary_path = path_obj.parent / "community_summary.json"
+         if summary_path.exists():
+             with open(summary_path, "r") as f:
+                 obj.community_summary = json.load(f)
+         return obj
 
     def generate_community_summary(self, text):
         """Generate summary for a given text using an LLM."""

@@ -30,7 +30,7 @@ class RAGService:
     def _load_or_create_index(self):
         try:
             if (self.storage_path / "docstore.json").exists():
-                graph_store = GraphRAGStore()
+                graph_store = GraphRAGStore.from_persist_dir(str(self.storage_path))
                 storage_context = StorageContext.from_defaults(
                     persist_dir=str(self.storage_path),
                     property_graph_store=graph_store
@@ -57,6 +57,14 @@ class RAGService:
     def ingest_file(self, file_path: str):
         """Read file, split, and build graph index."""
         documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
+        
+        if not documents:
+            raise ValueError(f"No content read from {file_path}. The file might be empty or unreadable.")
+            
+        if all(not doc.text.strip() for doc in documents):
+            raise ValueError(f"File {file_path} appears to be empty or contains no extractable text. If this is a PDF, ensure it is not a scanned image (OCR is not currently enabled).")
+            
+        print(f"Loaded {len(documents)} document chunks from {file_path}")
         
         splitter = SentenceSplitter(chunk_size=1024, chunk_overlap=20)
         nodes = splitter.get_nodes_from_documents(documents)
