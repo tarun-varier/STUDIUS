@@ -19,7 +19,9 @@ export const resourcesApi = {
   },
   createQuestionBank: async (formData: FormData) => {
     const response = await apiClient.post<QuestionBank>('/resources/question-banks/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: {
+        'Content-Type': undefined,
+      },
     });
     return response.data;
   },
@@ -31,7 +33,9 @@ export const resourcesApi = {
   },
   createStudyMaterial: async (formData: FormData) => {
     const response = await apiClient.post<StudyMaterial>('/resources/study-materials/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: {
+        'Content-Type': undefined,
+      },
     });
     return response.data;
   },
